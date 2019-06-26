@@ -1,0 +1,22 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t danielledelooze/react-test -f ./client/Dockerfile.dev ./client 
+
+script:
+  - docker run -e CI=true danielledelooze/react-test npm run test -- --coverage
+
+after_success:
+  - docker build -t danielledelooze/multi-client ./client
+  - docker build -t danielledelooze/multi-nginx ./nginx
+  - docker build -t danielledelooze/multi-server ./server
+  - docker build -t danielledelooze/multi-worker ./worker
+  # Log into docker cli to push image and avoid building on elastic beanstalk
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push danielledelooze/multi-client
+  - docker push danielledelooze/multi-nginx
+  - docker push danielledelooze/multi-server
+  - docker push danielledelooze/multi-worker
